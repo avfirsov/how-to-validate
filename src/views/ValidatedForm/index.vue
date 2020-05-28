@@ -1,4 +1,14 @@
 <script>
+// const AFTER_SUBMIT = 'after-submit';
+const IMMEDIATELY = 'immediately';
+const AFTER_BLUR = 'after-blur';
+
+// const deepGet = (object, path, returns) => {
+//   return path
+//     .match(/[^.[\]'`"]+/g)
+//     .reduce((accumulator, value) => (accumulator && accumulator[value] ? accumulator[value] : returns), object);
+// };
+
 import { required, alpha, email, alphaNum, minLength, maxLength } from 'vuelidate/lib/validators';
 
 //a timeout between blur event and validation exposition
@@ -6,6 +16,24 @@ const delay = 200;
 
 export default {
   name: 'Home',
+  props: {
+    firstValidationTrigger: {
+      type: String,
+      required: true,
+    },
+    secondValidationTrigger: {
+      type: String,
+      default: 'after-blur',
+    },
+    hideMsgOnFocus: {
+      type: Number,
+      required: true,
+    },
+    showMsgOnBlur: {
+      type: Number,
+      default: 1,
+    },
+  },
   validations() {
     return {
       name: { required, alpha },
@@ -22,6 +50,22 @@ export default {
       submitAttempted: false,
     };
   },
+  computed: {
+    showMsgAfterBlur() {
+      return (
+        this.firstValidationTrigger == AFTER_BLUR ||
+        (this.secondValidationTrigger == AFTER_BLUR && this.submitAttempted) ||
+        this.firstValidationTrigger == IMMEDIATELY && this.showMsgOnBlur||
+        (this.secondValidationTrigger == IMMEDIATELY && this.showMsgOnBlur && this.submitAttempted)
+      );
+    },
+    showMsgOnInput() {
+      return (
+        this.firstValidationTrigger == IMMEDIATELY ||
+        (this.secondValidationTrigger == IMMEDIATELY && this.submitAttempted)
+      );
+    },
+  },
   beforeMount() {
     this.proxy$v = JSON.parse(JSON.stringify(this.$v));
   },
@@ -31,9 +75,22 @@ export default {
       this.$v.$touch();
       this.proxy$v = JSON.parse(JSON.stringify(this.$v));
     },
-    handleBlur() {
-      if (this.submitAttempted) {
-        setTimeout(() => (this.proxy$v = JSON.parse(JSON.stringify(this.$v))), delay);
+    handleBlur(propName) {
+      //rewrite for nested case
+      if (this.showMsgAfterBlur) {
+        this.$v[propName].$touch();
+        setTimeout(() => this.$set(this.proxy$v[propName], '$error', this.$v[propName].$error), delay);
+      }
+    },
+    handleFocus(propName) {
+      //rewrite for nested case
+      if (this.hideMsgOnFocus) {
+        this.$set(this.proxy$v[propName], '$error', false);
+      }
+    },
+    handleInput(propName) {
+      if (this.showMsgOnInput) {
+        this.$set(this.proxy$v, propName, JSON.parse(JSON.stringify(this.$v[propName])));
       }
     },
   },
@@ -43,14 +100,16 @@ export default {
 <template>
   <div class="form">
     <div class="field">
-      <label class="label">Name</label>
+      <label class="label is-large">Name</label>
       <div class="control">
         <input
-          :class="['input', { 'is-danger': proxy$v.name.$error }]"
+          :class="['input', 'is-large', { 'is-danger': proxy$v.name.$error }]"
           type="text"
           placeholder="Name"
           v-model.trim="$v.name.$model"
-          @blur="handleBlur($event)"
+          @input="handleInput('name')"
+          @blur="handleBlur('name')"
+          @focus="handleFocus('name')"
         />
       </div>
       <p class="help is-danger" v-if="proxy$v.name.$error && !proxy$v.name.required">Please, fill in your name</p>
@@ -60,15 +119,17 @@ export default {
     </div>
 
     <div class="field">
-      <label class="label">Username</label>
+      <label class="label is-large">Username</label>
       <div class="control">
         <input
-          :class="['input', { 'is-danger': proxy$v.username.$error }]"
+          :class="['input', 'is-large', { 'is-danger': proxy$v.username.$error }]"
           type="text"
           placeholder="Username"
           value="bulma"
           v-model.trim="$v.username.$model"
-          @blur="handleBlur($event)"
+          @input="handleInput('username')"
+          @blur="handleBlur('username')"
+          @focus="handleFocus('username')"
         />
       </div>
       <p class="help is-danger" v-if="proxy$v.username.$error && !proxy$v.username.required">
@@ -86,15 +147,17 @@ export default {
     </div>
 
     <div class="field">
-      <label class="label">Email</label>
+      <label class="label is-large">Email</label>
       <div class="control">
         <input
-          :class="['input', { 'is-danger': proxy$v.email.$error }]"
+          :class="['input', 'is-large', { 'is-danger': proxy$v.email.$error }]"
           type="email"
           placeholder="Email"
           value="hello@"
           v-model.trim="$v.email.$model"
-          @blur="handleBlur($event)"
+          @input="handleInput('email')"
+          @blur="handleBlur('email')"
+          @focus="handleFocus('email')"
         />
       </div>
       <p class="help is-danger" v-if="proxy$v.email.$error && !proxy$v.email.required">Please, fill in the email</p>
@@ -103,8 +166,8 @@ export default {
       </p>
     </div>
 
-    <div class="control">
-      <button class="button is-link" @click="submit">Submit</button>
+    <div class="control margin-top">
+      <button class="button is-link is-large" @click="submit">Submit</button>
     </div>
   </div>
 </template>
