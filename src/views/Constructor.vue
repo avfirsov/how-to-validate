@@ -89,10 +89,7 @@ export default {
             </div>
           </div>
         </div>
-        <div
-          class="field margin-top"
-          v-if="(firstValidationTrigger && firstValidationTrigger != 'after-submit') || secondValidationTrigger"
-        >
+        <div class="field margin-top" v-if="firstValidationTrigger == 'immediately' || secondValidationTrigger">
           <label class="subtitle is-3"
             >When user focus in the input that already contains error, should error be hidden?</label
           >

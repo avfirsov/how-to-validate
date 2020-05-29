@@ -8,6 +8,7 @@ const IMMEDIATELY = 'immediately';
 //     .match(/[^.[\]'`"]+/g)
 //     .reduce((accumulator, value) => (accumulator && accumulator[value] ? accumulator[value] : returns), object);
 // };
+const confetti = require('canvas-confetti');
 
 import { required, alpha, email, alphaNum, minLength, maxLength } from 'vuelidate/lib/validators';
 
@@ -44,6 +45,7 @@ export default {
       email: '',
       proxy$v: {},
       submitAttempted: false,
+      myConfetti: null,
     };
   },
   computed: {
@@ -54,11 +56,24 @@ export default {
   beforeMount() {
     this.proxy$v = JSON.parse(JSON.stringify(this.$v));
   },
+  mounted() {
+    const myCanvas = document.createElement('canvas');
+    myCanvas.className = 'fireworks-canvas';
+    this.$el.appendChild(myCanvas);
+
+    this.myConfetti = confetti.create(myCanvas, {
+      resize: true,
+      useWorker: true,
+    });
+  },
   methods: {
     submit() {
       this.submitAttempted = true;
       this.$v.$touch();
       this.proxy$v = JSON.parse(JSON.stringify(this.$v));
+      if (!this.proxy$v.$error) {
+        this.lunchFireworks();
+      }
     },
     handleBlur(propName) {
       //rewrite for nested case
@@ -93,6 +108,40 @@ export default {
         if (this.firstValidationTrigger != IMMEDIATELY && !this.proxy$v[propName].$dirty) return;
         this.$set(this.proxy$v, propName, JSON.parse(JSON.stringify(this.$v[propName])));
       }
+    },
+    lunchFireworks() {
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      const vm = this;
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        // since particles fall down, start a bit higher than random
+        vm.myConfetti(
+          Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          })
+        );
+        vm.myConfetti(
+          Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          })
+        );
+      }, 250);
     },
   },
 };
@@ -172,3 +221,13 @@ export default {
     </div>
   </div>
 </template>
+
+<style>
+.fireworks-canvas {
+  position: absolute;
+  top: -100px;
+  left: calc(-50vw + 150px);
+  width: 100vw;
+  pointer-events: none;
+}
+</style>
