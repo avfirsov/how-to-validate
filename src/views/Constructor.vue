@@ -35,7 +35,7 @@ export default {
         this.$scrollTo(this.$refs.bottom, 500, {
           container: document.querySelector('html'),
           easing: 'ease-in',
-          offset: -60,
+          offset: -30,
           force: true,
           cancelable: true,
         });
