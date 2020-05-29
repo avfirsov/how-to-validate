@@ -4,9 +4,8 @@ import router from './router';
 import Vuelidate from 'vuelidate';
 Vue.use(Vuelidate);
 
-import VueChatScroll from 'vue-chat-scroll';
-Vue.use(VueChatScroll);
-
+var VueScrollTo = require('vue-scrollto');
+Vue.use(VueScrollTo);
 
 Vue.config.productionTip = false;
 

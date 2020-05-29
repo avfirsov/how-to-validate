@@ -12,24 +12,16 @@ export default {
       firstValidationTrigger: null,
       secondValidationTrigger: null,
       hideMsgOnFocus: null,
-      showMsgOnBlur: null,
     };
   },
   computed: {
     choice() {
-      return '' + this.firstValidationTrigger + this.secondValidationTrigger + this.hideMsgOnFocus + this.showMsgOnBlur;
-    },
-    askForShowOnBlur() {
-      return (
-        this.hideMsgOnFocus &&
-        (this.firstValidationTrigger == 'immediately' || this.secondValidationTrigger == 'immediately')
-      );
+      return '' + this.firstValidationTrigger + this.secondValidationTrigger + this.hideMsgOnFocus;
     },
     showForm() {
-      return this.askForShowOnBlur ? Number.isInteger(this.showMsgOnBlur) : Number.isInteger(this.hideMsgOnFocus);
+      return Number.isInteger(this.hideMsgOnFocus);
     },
   },
-  created() {},
   watch: {
     choice() {
       this.formKey += 1;
@@ -38,8 +30,16 @@ export default {
       this.secondValidationTrigger = null;
       this.hideMsgOnFocus = null;
     },
-    hideMsgOnFocus() {
-      this.showMsgOnBlur = null;
+    showForm(val) {
+      if (val) {
+        this.$scrollTo(this.$refs.bottom, 500, {
+          container: document.querySelector('html'),
+          easing: 'ease-in',
+          offset: -60,
+          force: true,
+          cancelable: true,
+        });
+      }
     },
   },
 };
@@ -69,7 +69,10 @@ export default {
             </div>
           </div>
         </div>
-        <div class="field margin-top" v-if="firstValidationTrigger == 'after-submit'">
+        <div
+          class="field margin-top"
+          v-if="firstValidationTrigger == 'after-submit' || firstValidationTrigger == 'after-blur'"
+        >
           <label class="subtitle is-3"
             >If user tried to correct error but failed, at witch moment subsequent error should be shown?</label
           >
@@ -77,7 +80,9 @@ export default {
             <div class="select is-large">
               <select v-model="secondValidationTrigger">
                 <option :value="null">Please select an option</option>
-                <option value="after-submit">Like the first time, after form submit</option>
+                <option value="after-submit" v-if="firstValidationTrigger != 'after-blur'"
+                  >Like before, after form submit</option
+                >
                 <option value="after-blur">After user blured from the input where subsequent error occured</option>
                 <option value="immediately">Immediately after error occur</option>
               </select>
@@ -101,29 +106,16 @@ export default {
             </div>
           </div>
         </div>
-        <div class="field margin-top" v-if="askForShowOnBlur">
-          <label class="subtitle is-3">When user blur from the input, should error be restored?</label>
-          <div class="control margin-top__small">
-            <div class="select is-large">
-              <select v-model="showMsgOnBlur">
-                <option :value="null">Please select an option</option>
-                <option :value="1">Yes, restore error if needed, when user blurs</option>
-                <option :value="0">No, keep field clean</option>
-              </select>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
     <section class="section centered" v-if="showForm">
-      <h1 class="title is-1 has-text-centered">Your form is ready, enjoy!</h1>
+      <h1 class="title is-1 has-text-centered">Your form is ready, have fun!</h1>
       <div class="container">
         <validated-form
           :key="formKey"
           :firstValidationTrigger="firstValidationTrigger"
           :secondValidationTrigger="secondValidationTrigger"
           :hideMsgOnFocus="hideMsgOnFocus"
-          :showMsgOnBlur="showMsgOnBlur"
         />
       </div>
     </section>

@@ -1,7 +1,7 @@
 <script>
-// const AFTER_SUBMIT = 'after-submit';
+const AFTER_SUBMIT = 'after-submit';
 const IMMEDIATELY = 'immediately';
-const AFTER_BLUR = 'after-blur';
+// const AFTER_BLUR = 'after-blur';
 
 // const deepGet = (object, path, returns) => {
 //   return path
@@ -29,10 +29,6 @@ export default {
       type: Number,
       required: true,
     },
-    showMsgOnBlur: {
-      type: Number,
-      default: 1,
-    },
   },
   validations() {
     return {
@@ -51,19 +47,8 @@ export default {
     };
   },
   computed: {
-    showMsgAfterBlur() {
-      return (
-        this.firstValidationTrigger == AFTER_BLUR ||
-        (this.secondValidationTrigger == AFTER_BLUR && this.submitAttempted) ||
-        this.firstValidationTrigger == IMMEDIATELY && this.showMsgOnBlur||
-        (this.secondValidationTrigger == IMMEDIATELY && this.showMsgOnBlur && this.submitAttempted)
-      );
-    },
     showMsgOnInput() {
-      return (
-        this.firstValidationTrigger == IMMEDIATELY ||
-        (this.secondValidationTrigger == IMMEDIATELY && this.submitAttempted)
-      );
+      return this.firstValidationTrigger == IMMEDIATELY || this.secondValidationTrigger == IMMEDIATELY;
     },
   },
   beforeMount() {
@@ -77,19 +62,35 @@ export default {
     },
     handleBlur(propName) {
       //rewrite for nested case
-      if (this.showMsgAfterBlur) {
-        this.$v[propName].$touch();
-        setTimeout(() => this.$set(this.proxy$v[propName], '$error', this.$v[propName].$error), delay);
+      if (
+        (this.firstValidationTrigger == AFTER_SUBMIT && !this.submitAttempted) ||
+        (this.secondValidationTrigger == AFTER_SUBMIT && this.submitAttempted && this.$v[propName].$dirty)
+      ) {
+        return;
       }
+      this.$v[propName].$touch();
+      setTimeout(() => {
+        this.$set(this.proxy$v, propName, JSON.parse(JSON.stringify(this.$v[propName])));
+      }, delay);
     },
     handleFocus(propName) {
       //rewrite for nested case
       if (this.hideMsgOnFocus) {
+        if (
+          this.secondValidationTrigger == AFTER_SUBMIT &&
+          this.submitAttempted &&
+          this.$v[propName].$dirty &&
+          !this.proxy$v[propName].$error
+        ) {
+          return;
+        }
+        this.$v[propName].$reset();
         this.$set(this.proxy$v[propName], '$error', false);
       }
     },
     handleInput(propName) {
       if (this.showMsgOnInput) {
+        if (this.firstValidationTrigger != IMMEDIATELY && !this.proxy$v[propName].$dirty) return;
         this.$set(this.proxy$v, propName, JSON.parse(JSON.stringify(this.$v[propName])));
       }
     },
